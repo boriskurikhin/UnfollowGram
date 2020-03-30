@@ -10,31 +10,31 @@ login_url = 'https://www.instagram.com/accounts/login/ajax/'
 followers_url = 'https://www.instagram.com/graphql/query/'
 
 session = requests.Session()
-userId = None
+query_hash = 'c76146de99bb02f6415203be841dd25a' #some sort of md5 hash used for follower lookup (seems cosntant)
 
 def get_followers():
     #try to log in
     logged_in = login()
 
-    if not logged_in:
+    if not logged_in['success']:
         print('Could not log in, check to see if credentials are valid. Or disable 2-step authentication.')
         sys.exit(0)
 
     # this is the query that browers seem to be using to fetch followers
     # we can maybe fetch # of followers and just set 'first' to that
     query = { 
-        'id' : userId,
-        'include_reel': 'true'
-        'fetch_mutual': 'true',
-        'first': randint(20, 50)
+        'id' : logged_in['userId'],
+        'include_reel': False,
+        'fetch_mutual': False,
+        'first': randint(50, 100) #does my query_hash only work with 24? we'll find out, UPDATE: guess not
     }
 
-    #let's get followers
-    response = session.get(followers_url, params={ })
-    
+    # #get first bulk of followers
+    response = session.get(followers_url, params={'query_hash': query_hash, 'variables': json.dumps(query)})
 
+    response_data = json.loads(response.text)
 
-    
+    print(response_data['data']['user']['edge_followed_by']['count'])
 
 def login():
 
@@ -42,9 +42,14 @@ def login():
     session.headers.update({
         'Connection': 'keep-alive',
         'X-Instagram-AJAX': '1',
-        'X-Requested-With': 'XMLHttpRequest'
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) \
-            AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36'
+        'X-Requested-With': 'XMLHttpRequest',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36'
+    })
+
+    # apparently this is important?
+    session.cookies.update({
+        'ig_pr': '1',
+        'ig_vw': '1920',
     })
 
     #extact csrf token
@@ -72,13 +77,18 @@ def login():
     great_success = json.loads(response.text)
     
     #update csrftoken once again
-    csrf_token = great_success.cookies['csrftoken']
+    csrf_token = response.cookies['csrftoken']
 
     #get the user id, we'll need this to get our followers
     userId = great_success['userId']
     session.headers.update({ 'X-CSRFToken': csrf_token })
+
+    #kind of important we have this
+    assert userId is not None
     
-    return great_success['authenticated']
+    return {
+        'success' : great_success['authenticated'],
+        'userId': userId
+    }
 
-
-login()
+get_followers()
