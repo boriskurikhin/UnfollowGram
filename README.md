@@ -37,6 +37,10 @@ chmod u+x unfollow
 ./unfollow
 ```
 
+#### YouTube Tutorial (for noobs)
+
+[![How to run this program](https://img.youtube.com/vi/1Yqdp1dBzVw/0.jpg)](https://www.youtube.com/watch?v=1Yqdp1dBzVw "How do to run this program")
+
 ## Usage
 
 Once you've followed the installation instructions above, navigate to the program's directory, open up Terminal or Command Prompt, and type in the following:
