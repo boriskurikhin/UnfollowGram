@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import requests
 import json
 from time import sleep
@@ -121,6 +122,7 @@ def login():
             login = json.loads(credentials.read())
     except Exception:
         print('Looks like you don\'t have a "login.json" - create one now & re-start')
+        sys.exit(0)
 
     #sleep a random amount of time so they'll think we're a human
     sleep(random.randint(3, 7))
