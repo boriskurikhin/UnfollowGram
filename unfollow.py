@@ -8,6 +8,7 @@ import sys
 url = 'https://www.instagram.com'
 login_url = 'https://www.instagram.com/accounts/login/ajax/'
 followers_url = 'https://www.instagram.com/graphql/query/'
+output_file = 'snakes.txt'
 
 session = requests.Session()
 query_hash_followers = 'c76146de99bb02f6415203be841dd25a' #some sort of md5 hash used for follower lookup (seems cosntant)
@@ -51,7 +52,6 @@ def runQuery(login, followers):
 
         response_data = json.loads(response.text)
 
-
         for node in response_data['data']['user'][edge_type]['edges']:
             result.append(node['node']['username'])
 
@@ -60,13 +60,38 @@ def runQuery(login, followers):
     
     result.sort()
 
-    with open('followers.txt' if followers else 'following.txt', 'w+') as ff:
-        ff.write("\n".join(result))
+    # with open('followers.txt' if followers else 'following.txt', 'w+') as ff:
+    #     ff.write("\n".join(result))
 
     return result
 
-def login():
+def findSnakes(following, followers):
+    i1 = 0
+    i2 = 0
+    snakes = []
+    #A simple O(n) algorithm
+    #Below is how it works
 
+    # () -> snake
+    # I follow:  [a, (b), d, (e), f]
+    # Follow me: [a, c, d, f]
+
+    while i1 < len(following):
+        #if we follow each other
+        if following[i1] == followers[i2]:
+            i1 += 1
+            i2 += 1
+        #found a snake
+        elif following[i1] < followers[i2]:
+            snakes.append(following[i1])
+            i1 += 1
+        else: i2 += 1
+    
+    with open(output_file, 'w+') as res:
+        res.write('-------SNAKES (%d total) -------\n' % (len(snakes)))
+        res.write('\n'.join(snakes))
+
+def login():
     #make it look like we're logging in from Chrome
     session.headers.update({
         'Connection': 'keep-alive',
@@ -123,8 +148,11 @@ def login():
 #try to log in
 logged_in = login()
 
-#run 2 queries
 print('Scanning...')
+#run 2 queries
 followers = runQuery(logged_in, True)
 following = runQuery(logged_in, False)
-print('Done!')
+
+#run analysis
+findSnakes(following, followers)
+print('Done! Please check', output_file)
