@@ -1,7 +1,7 @@
 import requests
 import json
 from time import sleep
-from random import randint
+import random
 import sys
 
 #all our URLs
@@ -26,15 +26,39 @@ def get_followers():
         'id' : logged_in['userId'],
         'include_reel': False,
         'fetch_mutual': False,
-        'first': randint(50, 100) #does my query_hash only work with 24? we'll find out, UPDATE: guess not
+        'first': random.randint(100, 200) #does my query_hash only work with 24? we'll find out, UPDATE: guess not
     }
 
-    # #get first bulk of followers
-    response = session.get(followers_url, params={'query_hash': query_hash, 'variables': json.dumps(query)})
+    followers = []
+    
+    #iteratively add followers
+    hasNextPage = True
+    offset = ''
 
-    response_data = json.loads(response.text)
+    while hasNextPage:
+        #sleep, so we dont' seem like a machine
+        sleep(random.uniform(0, 2)) 
 
-    print(response_data['data']['user']['edge_followed_by']['count'])
+        #insert offset
+        if len(offset) > 0:
+            query['after'] = offset
+
+        response = session.get(followers_url, params={'query_hash': query_hash, 'variables': json.dumps(query)})
+        response_data = json.loads(response.text)
+
+        for follower in response_data['data']['user']['edge_followed_by']['edges']:
+            followers.append(follower['node']['username'])
+
+        print ('retrieved a bunch of followers...')
+
+        hasNextPage = response_data['data']['user']['edge_followed_by']['page_info']['has_next_page']
+        offset  = response_data['data']['user']['edge_followed_by']['page_info']['end_cursor']
+
+    #write followers to file
+    with open('followers.txt', 'w+') as ff:
+        ff.write("\n".join(followers))
+
+    return followers
 
 def login():
 
@@ -69,7 +93,7 @@ def login():
         print('Looks like you don\'t have a "login.json" - create one now & re-start')
 
     #sleep a random amount of time so they'll think we're a human
-    sleep(randint(3, 7))
+    sleep(random.randint(3, 7))
 
     response = session.post(login_url, data=login, allow_redirects=True)
     
