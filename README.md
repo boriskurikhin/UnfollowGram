@@ -11,8 +11,7 @@ Ever been really annoyed trying to figure out who unfollowed you, or who is not 
 * Maybe even a small API, who knows?
 
 ## Installation
-
-I will make the installation & execution of this program "more consumer facing" soon...
+#### General Installation
 
 1. Save `unfollow.py` 
 2. Install Python 3 & [pip3](https://pip.pypa.io/en/stable/)
@@ -26,6 +25,15 @@ pip3 install requests
     "username": "your_username",
     "password": "your_password"
 }
+```
+---- 
+#### No Python? No Problem!
+
+1. Download the executable binary inside `/dist` called `unfollow` 
+2. Create, and place your `login.json` file *(like explained in step 4 above)*
+3. Run the program in your terminal like so:
+```bash
+./unfollow
 ```
 
 ## Usage
