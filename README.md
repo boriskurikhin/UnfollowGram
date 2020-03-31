@@ -33,6 +33,7 @@ pip3 install requests
 2. Create, and place your `login.json` file *(like explained in step 4 above)*
 3. Run the program in your terminal like so:
 ```bash
+chmod u+x unfollow
 ./unfollow
 ```
 
