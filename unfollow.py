@@ -10,30 +10,31 @@ login_url = 'https://www.instagram.com/accounts/login/ajax/'
 followers_url = 'https://www.instagram.com/graphql/query/'
 
 session = requests.Session()
-query_hash = 'c76146de99bb02f6415203be841dd25a' #some sort of md5 hash used for follower lookup (seems cosntant)
+query_hash_followers = 'c76146de99bb02f6415203be841dd25a' #some sort of md5 hash used for follower lookup (seems cosntant)
+query_hash_following = 'd04b0a864b4b54837c0d870b0e77e076' #same thing, just for the "following" queries
 
-def get_followers():
-    #try to log in
-    logged_in = login()
-
-    if not logged_in['success']:
+#queries followers, and people we follow
+def runQuery(login, followers):
+    if not login['success']:
         print('Could not log in, check to see if credentials are valid. Or disable 2-step authentication.')
         sys.exit(0)
-
+    
     # this is the query that browers seem to be using to fetch followers
     # we can maybe fetch # of followers and just set 'first' to that
     query = { 
-        'id' : logged_in['userId'],
+        'id' : login['userId'],
         'include_reel': False,
         'fetch_mutual': False,
         'first': random.randint(100, 200) #does my query_hash only work with 24? we'll find out, UPDATE: guess not
     }
 
-    followers = []
-    
-    #iteratively add followers
+    #results
+    result = []
+
+    #search parameter
     hasNextPage = True
     offset = ''
+    edge_type = 'edge_followed_by' if followers else 'edge_follow'
 
     while hasNextPage:
         #sleep, so we dont' seem like a machine
@@ -43,22 +44,26 @@ def get_followers():
         if len(offset) > 0:
             query['after'] = offset
 
-        response = session.get(followers_url, params={'query_hash': query_hash, 'variables': json.dumps(query)})
+        response = session.get(followers_url, params={
+            'query_hash': query_hash_followers if followers else query_hash_following,
+            'variables': json.dumps(query)
+        })
+
         response_data = json.loads(response.text)
 
-        for follower in response_data['data']['user']['edge_followed_by']['edges']:
-            followers.append(follower['node']['username'])
 
-        print ('retrieved a bunch of followers...')
+        for node in response_data['data']['user'][edge_type]['edges']:
+            result.append(node['node']['username'])
 
-        hasNextPage = response_data['data']['user']['edge_followed_by']['page_info']['has_next_page']
-        offset  = response_data['data']['user']['edge_followed_by']['page_info']['end_cursor']
+        hasNextPage = response_data['data']['user'][edge_type]['page_info']['has_next_page']
+        offset  = response_data['data']['user'][edge_type]['page_info']['end_cursor']
+    
+    result.sort()
 
-    #write followers to file
-    with open('followers.txt', 'w+') as ff:
-        ff.write("\n".join(followers))
+    with open('followers.txt' if followers else 'following.txt', 'w+') as ff:
+        ff.write("\n".join(result))
 
-    return followers
+    return result
 
 def login():
 
@@ -115,4 +120,11 @@ def login():
         'userId': userId
     }
 
-get_followers()
+#try to log in
+logged_in = login()
+
+#run 2 queries
+print('Scanning...')
+followers = runQuery(logged_in, True)
+following = runQuery(logged_in, False)
+print('Done!')
